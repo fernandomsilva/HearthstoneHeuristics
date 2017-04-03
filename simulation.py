@@ -90,13 +90,20 @@ class Test:
 					for target in card.targets:
 						copy_test_target = Test()
 						copy_test_target.game = copy.deepcopy(self.game)
+						#copy_test_target.game.players = (Player("one", self.deck1, self.hero1), Player("two", self.deck2, self.hero2))
 
 						for card_copy_t in copy_test_target.game.current_player.hand:
 							if card == card_copy_t:
+								#if target == player:
+								#	target = copy_test_target.game.current_player
+								#if target == opponent:
+								#	target = copy_test_target.game.current_player.opponent
+
+								target_dict = {'card': target, 'atk': target.atk, 'health': target.health, 'opponent': True if target.controller.first_player != card_copy_t.game.current_player.first_player else False}
 								card_copy_t.play(target=target)
 
-								result.append((cards_played + [card], GameState(player.hero.health, player.mana, player.characters, opponent.hero.health, opponent.characters)))
-								result.extend(copy_test_target.simulatePossibleActions(cards_played + [card_copy_t]))
+								result.append((cards_played + [(card, target_dict)], GameState(player.hero.health, player.mana, player.characters, opponent.hero.health, opponent.characters)))
+								result.extend(copy_test_target.simulatePossibleActions(cards_played + [(card_copy_t, {'card': target, 'atk': target.atk, 'health': target.health, 'opponent': True if target.controller != player else False})]))
 
 								break
 
@@ -107,11 +114,11 @@ class Test:
 							break
 
 			elif type_of_action == Actions.POWER:
-				player.hero.power.use()
+				copy_test.game.current_player.hero.power.use()
 
 			if not target_flag:
 				result.append((cards_played + [card], GameState(player.hero.health, player.mana, player.characters, opponent.hero.health, opponent.characters)))
-				result.extend(copy_test.simulatePossibleActions(cards_played + [card_copy]))
+				result.extend(copy_test.simulatePossibleActions(cards_played + [card]))
 
 		return result
 
@@ -159,8 +166,18 @@ t.game.end_turn()
 t.game.end_turn()
 t.game.end_turn()
 t.game.end_turn()
+
+print(t.game.current_player.hero.health)
+print(t.game.current_player.opponent.hero.health)
+
+game_copy = Test()
+game_copy.game = copy.deepcopy(t.game)
+
 r = t.simulatePossibleActions()
 
-print(t.possibleNextAction())
+t.game = game_copy.game
+
 print(r)
 
+print(t.game.current_player.hero.health)
+print(t.game.current_player.opponent.hero.health)
