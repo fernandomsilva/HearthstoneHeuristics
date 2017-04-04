@@ -58,6 +58,51 @@ class Test:
 		self.player1.choice.choose()
 		self.player2.choice.choose()
 
+	def possibleNextAtk(self):
+		result = []
+		player = self.game.current_player
+
+		for character in player.characters:
+			if character.can_attack():
+				result.append((character, Actions.ATTACK))
+
+		return result
+
+	def simulatePossibleAtks(self, cards_atk=[]):
+		result = []
+
+		list_of_next_atks = self.possibleNextAtk()
+
+		for i in range(0, len(list_of_next_atks)):
+			p = self.game.current_player
+			opp = p.opponent
+
+			index_of_char = p.characters.index(list_of_next_atks[i][0])
+
+			list_of_targets = list_of_next_atks[i][0].targets
+
+			for j in range(0, len(list_of_targets)):
+				copy_test = Test()
+				copy_test.game = copy.deepcopy(self.game)
+
+				target = list_of_targets[j]
+
+				target_dict = {'card': target, 'atk': target.atk, 'health': target.health, 'opponent': True if target.controller.first_player != p.first_player else False}
+
+				if target_dict['opponent'] == True:
+					index_of_target = opp.characters.index(target)
+					copy_test.game.current_player.characters[index_of_char].attack(target=copy_test.game.current_player.opponent.characters[index_of_target])
+				else:
+					index_of_target = p.characters.index(target)
+					copy_test.game.current_player.characters[index_of_char].attack(target=copy_test.game.current_player.characters[index_of_target])
+
+				player = copy_test.game.current_player
+				opponent = player.opponent
+				result.append((cards_atk + [(p.characters[index_of_char], target_dict)], GameState(player.hero.health, player.mana, player.characters, opponent.hero.health, opponent.characters)))
+				result.extend(copy_test.simulatePossibleAtks(cards_atk + [(p.characters[index_of_char], target_dict)]))
+
+		return result
+
 	def possibleNextAction(self):
 		result = []
 		player = self.game.current_player
@@ -72,6 +117,27 @@ class Test:
 		return result
 
 	def simulatePossibleActions(self, cards_played=[]):
+		result = []
+
+		list_of_next_actions = self.possibleNextAction()
+
+		for i in range(0, len(list_of_next_actions)):
+			p = self.game.current_player
+			opp = p.opponent
+
+			index_of_card = p.hand.index(list_of_next_actions[i][0])
+
+			if type_of_action == Actions.PLAY:
+			elif type_of_action == Actions.POWER:
+				copy_test = Test()
+				copy_test.game = copy.deepcopy(self.game)
+
+				copy_test.game.current_player.hero.power.use()
+
+			result.append((cards_played + [card], GameState(player.hero.health, player.mana, player.characters, opponent.hero.health, opponent.characters)))
+			result.extend(copy_test.simulatePossibleActions(cards_played + [card]))
+
+
 		result = []
 
 		list_of_next_actions = self.possibleNextAction()
@@ -121,27 +187,6 @@ class Test:
 				result.extend(copy_test.simulatePossibleActions(cards_played + [card]))
 
 		return result
-
-	'''
-	def allPossibleActions(self):
-		result = []
-
-		temp = []
-		list_of_next_actions = self.possibleNextAction()
-
-		for (card, type_of_action) in list_of_next_actions:
-			copy_test = Test()
-			copy_test.game = copy.deepcopy(self.game)
-			
-			if type_of_action == Actions.PLAY:
-				for card_copy in copy_test.game.current_player.hand:
-					if card == card_copy:
-						temp.append((card_copy, type_of_action, copy_test))
-			elif type_of_action == Actions.POWER:
-				temp.append((copy_test.current_player.hero.power, type_of_action, copy_test))
-
-		return temp
-	'''
 			
 
 
@@ -162,22 +207,51 @@ self.game.end_turn()
 
 t = Test()
 t.start()
+
+i = 0
+
+opt = t.possibleNextAction()
+if len(opt) > 0:
+	while opt[i][0].must_choose_one:
+		i +=1
+	opt[i][0].play()
 t.game.end_turn()
+
+opt = t.possibleNextAction()
+if len(opt) > 0:
+	while opt[i][0].must_choose_one:
+		i +=1
+	opt[i][0].play()
 t.game.end_turn()
+
+opt = t.possibleNextAction()
+if len(opt) > 0:
+	while opt[i][0].must_choose_one:
+		i +=1
+	opt[i][0].play()
 t.game.end_turn()
+
+opt = t.possibleNextAction()
+if len(opt) > 0:
+	while opt[i][0].must_choose_one:
+		i +=1
+	opt[i][0].play()
 t.game.end_turn()
 
-print(t.game.current_player.hero.health)
-print(t.game.current_player.opponent.hero.health)
 
-game_copy = Test()
-game_copy.game = copy.deepcopy(t.game)
+print(t.simulatePossibleAtks())
 
-r = t.simulatePossibleActions()
+#print(t.game.current_player.hero.health)
+#print(t.game.current_player.opponent.hero.health)
 
-t.game = game_copy.game
+#game_copy = Test()
+#game_copy.game = copy.deepcopy(t.game)
 
-print(r)
+#r = t.simulatePossibleActions()
 
-print(t.game.current_player.hero.health)
-print(t.game.current_player.opponent.hero.health)
+#t.game = game_copy.game
+
+#print(r)
+
+#print(t.game.current_player.hero.health)
+#print(t.game.current_player.opponent.hero.health)
