@@ -8,6 +8,7 @@
 #"Razorfen Hunter" = CS2_196
 #"Raid Leader" = CS2_122
 #"Alleycat" = CFM_315
+#"Tabbycat" = CFM_315t
 #"War Golem" = CS2_186
 #"Chillwind Yeti" = CS2_182
 #"Core Hound" = CS2_201

@@ -43,7 +43,6 @@ class Test:
 		self.game = None
 
 	def start(self):
-		cards.db.initialize()
 		self.hero1 = CardClass.HUNTER.default_hero
 		self.hero2 = CardClass.HUNTER.default_hero
 		self.deck1 = list(hunter_simple_deck)
@@ -230,6 +229,19 @@ class Test:
 		return result
 		'''
 
+class GameHandler:
+	def __init__(self, test_case, players):
+		self.game_tester = test_case
+		self.players = players
+
+		cards.db.initialize()
+
+	def run():
+		self.game_test.start()
+
+		while not self.game_test.game.ended:
+			
+			self.game_test.game.end_turn()
 
 '''
 self.player1.hero.power.is_usable()
@@ -246,27 +258,6 @@ self.player1.characters[0].attack(target)
 self.game.end_turn()
 '''
 
+temp = GameHandler([], [])
 t = Test()
 t.start()
-
-t.game.end_turn()
-t.game.end_turn()
-t.game.end_turn()
-t.game.end_turn()
-
-#print(t.simulatePossibleAtks())
-
-#print(t.game.current_player.hero.health)
-#print(t.game.current_player.opponent.hero.health)
-
-#game_copy = Test()
-#game_copy.game = copy.deepcopy(t.game)
-
-r = t.simulatePossibleActions()
-
-#t.game = game_copy.game
-
-print(r)
-
-#print(t.game.current_player.hero.health)
-#print(t.game.current_player.opponent.hero.health)
