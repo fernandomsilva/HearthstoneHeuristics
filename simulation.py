@@ -8,6 +8,8 @@ from fireplace.player import Player
 import fireplace.cards
 from hunter_simple_deck import *
 
+import heuristicfunctions
+
 class Actions(Enum):
 	PLAY = 1
 	ATTACK = 2
@@ -228,6 +230,35 @@ class Test:
 
 		return result
 		'''
+class AI:
+	pass
+
+class HeuristicAI:
+	def __init__(self, heuristic):
+		self.heuristic = self.interpreter(heuristic)
+
+	def move(self, test):
+		list_of_actions = test.simulatePossibleActions()
+		list_of_atks = test.simulatePossibleAtks()
+
+		for (action, function, param) in self.heuristic:
+			if action == Actions.PLAY or Actions.POWER:
+				move = function(list_of_actions, param)
+				print(move)
+			elif action == Actions.ATTACK:
+				move = function(list_of_atks, param)
+				print(move)
+
+	def interpreter(self, heuristic):
+		result = []
+
+		for (action, item, param) in heuristic:
+			if item == "min":
+				result.append((action, heuristicfunctions.minimum, param))
+			elif item == "max":
+				result.append((action, heuristicfunctions.maximum, param))
+
+		return result
 
 class GameHandler:
 	def __init__(self, test_case, players):
@@ -236,7 +267,7 @@ class GameHandler:
 
 		cards.db.initialize()
 
-	def run():
+	def run(self):
 		self.game_test.start()
 
 		while not self.game_test.game.ended:
@@ -261,3 +292,11 @@ self.game.end_turn()
 temp = GameHandler([], [])
 t = Test()
 t.start()
+
+t.game.end_turn()
+t.game.end_turn()
+t.game.end_turn()
+t.game.end_turn()
+
+hai = HeuristicAI([(Actions.PLAY, "max", "potential_damage"), (Actions.ATTACK, "min", "enemy_herohealth")])
+hai.move(t)
