@@ -237,18 +237,6 @@ class HeuristicAI:
 	def __init__(self, heuristic):
 		self.heuristic = self.interpreter(heuristic)
 
-	def move(self, test):
-		list_of_actions = test.simulatePossibleActions()
-		list_of_atks = test.simulatePossibleAtks()
-
-		for (action, function, param) in self.heuristic:
-			if action == Actions.PLAY or Actions.POWER:
-				move = function(list_of_actions, param)
-				print(move)
-			elif action == Actions.ATTACK:
-				move = function(list_of_atks, param)
-				print(move)
-
 	def interpreter(self, heuristic):
 		result = []
 
@@ -260,6 +248,71 @@ class HeuristicAI:
 
 		return result
 
+	def move(self, test):
+		list_of_actions = test.simulatePossibleActions()
+		list_of_atks = test.simulatePossibleAtks()
+
+		for (action, function, param) in self.heuristic:
+			if action == Actions.PLAY or action == Actions.POWER:
+				if len(list_of_actions) > 0:
+					move = function(list_of_actions, param)
+					self.play(move[0], test.game)
+
+			elif action == Actions.ATTACK:
+				if len(list_of_atks) > 0:
+					move = function(list_of_atks, param)
+					self.attack(move[0], test.game)
+
+	def play(self, move, game):
+		for action in move:
+			if (isinstance(action, fireplace.card.HeroPower)):
+				game.current_player.hero.power.use()
+			else:
+				for card in game.current_player.hand:
+					if not isinstance(action, tuple):
+						if card == action:
+							card.play()
+							break
+					else:
+						actor = action[0]
+						target = action[1]
+
+						char_pool = []
+						
+						if target['opponent']:
+							char_pool = game.current_player.opponent.characters
+						else:
+							char_pool = game.current_player.characters
+						
+						for char in char_pool:
+							if char == target['card'] and char.atk == target['atk'] and char.health == target['health']:
+								card.play(target=char)
+								break
+	
+	def attack(self, move, game):
+		for (atk_char, target) in move:
+			if target['opponent']:
+				char_pool = game.current_player.opponent.characters
+			else:
+				char_pool = game.current_player.characters
+
+			if (isinstance(atk_char, fireplace.card.HeroPower)):
+				for char in char_pool:
+					if char == target['card'] and char.atk == target['atk'] and char.health == target['health']:
+						game.current_player.hero.power(target=char)
+						break
+			else:
+				for self_char in game.current_player.characters:
+					print("atk: " + str(atk_char))
+					print("self: " + str(self_char))
+					if self_char == atk_char and self_char.can_attack():
+						for char in char_pool:
+							if char == target['card'] and char.atk == target['atk'] and char.health == target['health']:
+								self_char.attack(target=char)
+								break
+						
+						break
+
 class GameHandler:
 	def __init__(self, test_case, players):
 		self.game_tester = test_case
@@ -268,11 +321,15 @@ class GameHandler:
 		cards.db.initialize()
 
 	def run(self):
-		self.game_test.start()
+		self.game_tester.start()
 
-		while not self.game_test.game.ended:
+		current_player = 0
+		
+		while not self.game_tester.game.ended:
+			self.players[current_player].move(self.game_tester)
+			self.game_tester.game.end_turn()
 			
-			self.game_test.game.end_turn()
+			current_player = (current_player + 1) % 1
 
 '''
 self.player1.hero.power.is_usable()
@@ -289,14 +346,9 @@ self.player1.characters[0].attack(target)
 self.game.end_turn()
 '''
 
-temp = GameHandler([], [])
-t = Test()
-t.start()
-
-t.game.end_turn()
-t.game.end_turn()
-t.game.end_turn()
-t.game.end_turn()
+#t = Test()
+#t.start()
 
 hai = HeuristicAI([(Actions.PLAY, "max", "potential_damage"), (Actions.ATTACK, "min", "enemy_herohealth")])
-hai.move(t)
+temp = GameHandler(Test(), [hai])
+temp.run()
