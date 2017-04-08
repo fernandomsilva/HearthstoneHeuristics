@@ -127,6 +127,7 @@ class Test:
 			opp = p.opponent
 			card = list_of_next_actions[i][0]
 			type_of_action = list_of_next_actions[i][1]
+			target_flag = False
 
 			if type_of_action == Actions.PLAY:
 				index_of_card = p.hand.index(list_of_next_actions[i][0])
@@ -303,8 +304,6 @@ class HeuristicAI:
 						break
 			else:
 				for self_char in game.current_player.characters:
-					print("atk: " + str(atk_char))
-					print("self: " + str(self_char))
 					if self_char == atk_char and self_char.can_attack():
 						for char in char_pool:
 							if char == target['card'] and char.atk == target['atk'] and char.health == target['health']:
