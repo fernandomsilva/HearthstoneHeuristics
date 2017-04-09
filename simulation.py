@@ -17,12 +17,15 @@ class Actions(Enum):
 
 class Effects(Enum):
 	SUMMON = 1
+	HIT = 2
+	CUSTOM = 3
 
 class ProtoCharacter:
-	def __init__(self, id, atk, health, power):
+	def __init__(self, id, atk, health, race, power):
 		self.id = id
 		self.atk = atk
 		self.health = health
+		self.race = race
 		self.power = power
 
 class CharacterState:
@@ -30,18 +33,32 @@ class CharacterState:
 		self.id = char.id
 		self.atk = char.atk
 		self.health = char.health
+		self.race = char.race
 		self.power = self.buildPowerDict(char.data.scripts)
 	
+	def __str__(self):
+		return str(self.id) + ": ATK/" + str(self.atk) + " HP/" + str(self.health) + " RACE/" + str(self.race) + " POWER/" + str(self.power)
+	
 	def buildPowerDict(self, charscript):
-		result = {'battlecry': []}
+		result = {'battlecry': [], 'update': []}
 		
 		for data in charscript.play:
-			if isinstance(data[0], fireplace.actions.Summon):
-				temp_id = data[0]._args[1]
-				temp_tags = cards.db[id].tags
-				temp_char = ProtoCharacter(temp.id, temp_tags[GameTag.ATK], temp_tags[GameTag.HEALTH],[])
-				result['battlecry'].append((Effects.SUMMON, data[0]._args[1]))
-		
+			if isinstance(data, fireplace.actions.Summon):
+				temp_id = data._args[1]
+				temp_tags = cards.db[temp_id].tags
+				temp_char = ProtoCharacter(temp_id, temp_tags[GameTag.ATK], temp_tags[GameTag.HEALTH], temp_tags[GameTag.CARDRACE],[])
+				result['battlecry'].append((Effects.SUMMON, temp_char))
+			
+			if isinstance(data, fireplace.actions.Hit):
+				result['battlecry'].append((Effects.HIT, True, data._args[1]))
+			
+		for data in charscript.update:
+			if data.buff == 'CS2_122e':
+				result['update'].append((Effects.CUSTOM, 'Raid Leader'))
+			
+			if data.buff == 'DS1_175o':
+				result['update'].append((Effects.CUSTOM, 'Timber Wolf'))
+
 		return result
 
 class GameState:
@@ -55,6 +72,17 @@ class GameState:
 		self.number_of_minions = len(player.characters) - 1 # minus 1 to remove the hero
 		self.enemy_herohealth = opponent.hero.health
 		self.enemy_number_of_minions = len(opponent.characters) - 1 # minus 1 to remove the hero
+	
+	def __str__(self):
+		temp = ""
+		temp += "Hero Health: " + str(self.herohealth)
+		temp += " Hero Mana: " + str(self.mana)
+		temp += " Potential Damage: " + str(self.potential_damage)
+		temp += " Minions: " + str(self.minions)
+		temp += " Enemy Hero Health: " + str(self.enemy_herohealth)
+		temp += " Enemy # of Minions: " + str(self.enemy_number_of_minions)
+		
+		return temp
 
 	def calculatePotentialDamage(self, characters):
 		total = 0
@@ -64,6 +92,11 @@ class GameState:
 				total += character.atk
 
 		return total
+	
+	def addMinion(self, card):
+		self.minions.append(CharacterState(card))
+		self.number_of_minions = self.number_of_minions + 1
+		#self.potential_damage = self.calculatePotentialDamage(player.characters)
 
 class Test:
 	def __init__(self):
@@ -137,6 +170,21 @@ class Test:
 
 		return result
 
+	def possibleNextActionLight(self, used=[]):
+		result = []
+		player = self.game.current_player
+
+		for x in range(0, len(player.hand)):
+			if x not in used:
+				card = player.hand[x]
+				if card.is_playable():
+					result.append((x, Actions.PLAY))
+		
+		if player.hero.power.is_usable():
+			result.append((player.hero.power, Actions.POWER))
+		
+		return result	
+	
 	def possibleNextAction(self):
 		result = []
 		player = self.game.current_player
@@ -148,6 +196,34 @@ class Test:
 		if player.hero.power.is_usable():
 			result.append((player.hero.power, Actions.POWER))
 
+		return result
+	
+	def simulatePossibleActionsLight(self, cards_played=[], gamestate=None, cards_used=[]):
+		if gamestate == None:
+			gamestate = GameState(self.game)
+		
+		current_mana = self.game.current_player.mana
+		
+		result = []
+		
+		list_of_possible_actions = self.possibleNextActionLight(cards_used)
+		
+		for (card_index, type_of_action) in list_of_possible_actions:
+			if (type_of_action == Actions.PLAY):
+				card = self.game.current_player.hand[card_index]
+				if isinstance(card, fireplace.card.Minion):
+					temp_state = GameState(self.game)
+					temp_state.addMinion(card)
+					
+					self.game.current_player.__dict__['_max_mana'] = self.game.current_player.__dict__['_max_mana'] - card.cost
+					
+					result.append((cards_played + [card], temp_state))
+					result.extend(self.simulatePossibleActionsLight(cards_played + [card], temp_state, cards_used + [card_index]))
+		
+					self.game.current_player.__dict__['_max_mana'] = current_mana
+		
+		self.game.current_player.__dict__['_max_mana'] = current_mana
+		
 		return result
 
 	def simulatePossibleActions(self, cards_played=[]):
@@ -380,6 +456,15 @@ self.game.end_turn()
 
 t = Test()
 temp = GameHandler(t,[])
+t.start()
+t.game.end_turn()
+t.game.end_turn()
+t.game.end_turn()
+t.game.end_turn()
+t.game.end_turn()
+t.game.end_turn()
+
+h = t.simulatePossibleActionsLight()
 #t.start()
 
 #hai = HeuristicAI([(Actions.PLAY, "max", "potential_damage"), (Actions.ATTACK, "min", "enemy_herohealth")])
