@@ -15,13 +15,46 @@ class Actions(Enum):
 	ATTACK = 2
 	POWER = 3
 
+class Effects(Enum):
+	SUMMON = 1
+
+class ProtoCharacter:
+	def __init__(self, id, atk, health, power):
+		self.id = id
+		self.atk = atk
+		self.health = health
+		self.power = power
+
+class CharacterState:
+	def __init__(self, char):
+		self.id = char.id
+		self.atk = char.atk
+		self.health = char.health
+		self.power = self.buildPowerDict(char.data.scripts)
+	
+	def buildPowerDict(self, charscript):
+		result = {'battlecry': []}
+		
+		for data in charscript.play:
+			if isinstance(data[0], fireplace.actions.Summon):
+				temp_id = data[0]._args[1]
+				temp_tags = cards.db[id].tags
+				temp_char = ProtoCharacter(temp.id, temp_tags[GameTag.ATK], temp_tags[GameTag.HEALTH],[])
+				result['battlecry'].append((Effects.SUMMON, data[0]._args[1]))
+		
+		return result
+
 class GameState:
-	def __init__(self, herohealth, mana, characters, enemy_herohealth, enemy_characters):
-		self.herohealth = herohealth
-		self.potential_damage = self.calculatePotentialDamage(characters)
-		self.number_of_minions = len(characters) - 1 # minus 1 to remove the hero
-		self.enemy_herohealth = enemy_herohealth
-		self.enemy_number_of_minions = len(enemy_characters) - 1 # minus 1 to remove the hero
+	def __init__(self, game):
+		player = game.current_player
+		opponent = player.opponent
+		self.herohealth = player.hero.health
+		self.mana = player.mana
+		self.potential_damage = self.calculatePotentialDamage(player.characters)
+		self.minions = [CharacterState(x) for x in player.characters]
+		self.number_of_minions = len(player.characters) - 1 # minus 1 to remove the hero
+		self.enemy_herohealth = opponent.hero.health
+		self.enemy_number_of_minions = len(opponent.characters) - 1 # minus 1 to remove the hero
 
 	def calculatePotentialDamage(self, characters):
 		total = 0
@@ -345,9 +378,10 @@ self.player1.characters[0].attack(target)
 self.game.end_turn()
 '''
 
-#t = Test()
+t = Test()
+temp = GameHandler(t,[])
 #t.start()
 
-hai = HeuristicAI([(Actions.PLAY, "max", "potential_damage"), (Actions.ATTACK, "min", "enemy_herohealth")])
-temp = GameHandler(Test(), [hai])
-temp.run()
+#hai = HeuristicAI([(Actions.PLAY, "max", "potential_damage"), (Actions.ATTACK, "min", "enemy_herohealth")])
+#temp = GameHandler(Test(), [hai])
+#temp.run()
