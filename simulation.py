@@ -180,7 +180,7 @@ class Test:
 				if card.is_playable():
 					result.append((x, Actions.PLAY))
 		
-		if player.hero.power.is_usable():
+		if player.hero.power.is_usable() and player.hero.power not in used:
 			result.append((player.hero.power, Actions.POWER))
 		
 		return result	
@@ -221,6 +221,20 @@ class Test:
 					result.extend(self.simulatePossibleActionsLight(cards_played + [card], temp_state, cards_used + [card_index]))
 		
 					self.game.current_player.__dict__['_max_mana'] = current_mana
+
+				else:
+					pass
+
+			if (type_of_action == Actions.POWER):
+				temp_state = GameState(self.game)
+				if self.game.current_player.hero.power.id == 'DS1h_292':
+					temp_state.enemy_herohealth = temp_state.enemy_herohealth - 2
+					self.game.current_player.__dict__['_max_mana'] = self.game.current_player.__dict__['_max_mana'] - self.game.current_player.hero.power.cost
+	
+				result.append((cards_played + [card_index], temp_state))
+				result.extend(self.simulatePossibleActionsLight(cards_played + [card], temp_state, cards_used + [card_index]))
+
+				self.game.current_player.__dict__['_max_mana'] = self.game.current_player.__dict__['_max_mana'] + self.game.current_player.hero.power
 		
 		self.game.current_player.__dict__['_max_mana'] = current_mana
 		
