@@ -173,6 +173,50 @@ class GameState:
 				else:
 					#ADD SELF HERO HIT ??????????????????????
 					self.enemy_herohealth = self.enemy_herohealth - data._args[1]
+	
+	def removeEffect(self, minion, opponent=False):
+		if opponent:
+			source = self.enemy_minions
+		else:
+			source = self.minions
+	
+		if not opponent:
+			for (effect_minion, minion_power_type, minion_power) in self.updateEffects:
+				if id(effect_minion) == id(minion):
+					if minion_power_type == Effects.CUSTOM:
+						if minion_power == 'Raid Leader':
+							for target_minion in source:
+								target_minion.atk = target_minion.atk - 1
+						
+						if minion_power == 'Timber Wolf':
+							for target_minion in source:
+								if target_minion.race == minion.race:
+									target_minion.atk = target_minion.atk - 1
+				
+					break
+		else:
+			if len(minion.power['update']) > 0:
+				for power_type, power in minion.power['update']:
+					if power_type == Effects.CUSTOM:
+						if power == 'Raid Leader':
+							for target_minion in source:
+								target_minion.atk = target_minion.atk - 1
+						
+						if power == 'Timber Wolf':
+							for target_minion in source:
+								if target_minion.race == minion.race:
+									target.minion.atk = target_minion.atk - 1
+	
+	def updateState(self):
+		list_of_minions_to_remove = []
+	
+		for minion in self.minions:
+			if minion.health <= 0:
+				list_of_minions_to_remove.append(minion)
+
+		for minion in list_of_minions_to_remove:
+			self.minions.remove(minion)
+			self.removeEffect(minion)
 
 class Test:
 	def __init__(self):
