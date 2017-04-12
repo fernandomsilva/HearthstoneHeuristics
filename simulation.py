@@ -156,14 +156,17 @@ class GameState:
 		for data in spellscript.play:
 			if isinstance(data, fireplace.actions.Hit):
 				if 'HERO' not in target.id:
+					#print(target)
 					for minion in self.enemy_minions:
 						if minion.id == target.id and minion.atk == target.atk and minion.health == target.health:
+							#print('here')
 							minion.health = minion.health - data._args[1]
 							flagHero = False
 
 					if flagHero:
 						for minion in self.minions:
 							if minion.id == target.id and minion.atk == target.atk and minion.health == target.health:
+								#print('here 2')
 								minion.health = minion.health - data._args[1]
 								flagHero = False
 	
@@ -558,12 +561,39 @@ self.player1.characters[0].attack(target)
 self.game.end_turn()
 '''
 
+def testrun():
+	t.start()
+	t.game.end_turn()
+	for card in t.game.current_player.hand:
+		if len(card.targets) == 0:
+			if card.is_playable():
+				card.play()
+	t.game.end_turn()
+	t.game.end_turn()
+	for card in t.game.current_player.hand:
+		if len(card.targets) == 0:
+			if card.is_playable():
+				card.play()
+	t.game.end_turn()
+	t.game.end_turn()
+	t.game.end_turn()	
+
+	h = t.simulatePossibleActionsLight()
+
 t = Test()
 temp = GameHandler(t,[])
 t.start()
 t.game.end_turn()
+for card in t.game.current_player.hand:
+	if len(card.targets) == 0:
+		if card.is_playable():
+			card.play()
 t.game.end_turn()
 t.game.end_turn()
+for card in t.game.current_player.hand:
+	if len(card.targets) == 0:
+		if card.is_playable():
+			card.play()
 t.game.end_turn()
 t.game.end_turn()
 t.game.end_turn()
