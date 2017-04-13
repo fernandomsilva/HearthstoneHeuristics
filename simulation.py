@@ -245,6 +245,18 @@ class Test:
 		self.player1.choice.choose()
 		self.player2.choice.choose()
 
+	def possibleNextAtkLight(self, used=[]):
+		result = []
+		player = self.game.current_player
+
+		for x in len(player.characters):
+			if x not in used:
+				character = player.characters[x]
+				if character.can_attack():
+					result.append((character, Actions.ATTACK))
+
+		return result
+
 	def possibleNextAtk(self):
 		result = []
 		player = self.game.current_player
@@ -254,6 +266,17 @@ class Test:
 				result.append((character, Actions.ATTACK))
 
 		return result
+
+	def simulatePossibleAtksLight(self, cards_atk=[], gstate=None, cards_used=[]):
+		result = []
+
+		list_of_next_atks = self.possibleNextAtk()
+
+		for character in list_of_next_atks:
+			p = self.game.current_player
+			opp = p.opponent
+
+
 
 	def simulatePossibleAtks(self, cards_atk=[]):
 		result = []
@@ -349,16 +372,25 @@ class Test:
 							temp_state = GameState(self.game)
 							temp_state.copy(gstate)
 
-							self.game.current_player.__dict__['_max_mana'] = self.game.current_player.__dict__['_max_mana'] - card.cost
+							if card.id == 'GAME_005': #THE COIN							
+								self.game.current_player.__dict__['_max_mana'] = self.game.current_player.__dict__['_max_mana'] + 1
+								
+								result.append((cards_played + [card], temp_state))
+								result.extend(self.simulatePossibleActionsLight(cards_played + [card], temp_state, cards_used + [card_index]))
+					
+								self.game.current_player.__dict__['_max_mana'] = current_mana
 
-							#target_dict = {'card': target, 'atk': target.atk, 'health': target.health, 'opponent': True if target.controller.first_player != p.first_player else False}
+							else:
+								self.game.current_player.__dict__['_max_mana'] = self.game.current_player.__dict__['_max_mana'] - card.cost
 
-							temp_state.playSpell(card, target)
-							
-							result.append((cards_played + [(card, target)], temp_state))
-							result.extend(self.simulatePossibleActionsLight(cards_played + [(card, target)], temp_state, cards_used + [card_index]))
-				
-							self.game.current_player.__dict__['_max_mana'] = current_mana
+								#target_dict = {'card': target, 'atk': target.atk, 'health': target.health, 'opponent': True if target.controller.first_player != p.first_player else False}
+
+								temp_state.playSpell(card, target)
+								
+								result.append((cards_played + [(card, target)], temp_state))
+								result.extend(self.simulatePossibleActionsLight(cards_played + [(card, target)], temp_state, cards_used + [card_index]))
+					
+								self.game.current_player.__dict__['_max_mana'] = current_mana
 
 			if (type_of_action == Actions.POWER):
 				temp_state = GameState(self.game)
@@ -628,16 +660,20 @@ t = Test()
 temp = GameHandler(t,[])
 t.start()
 t.game.end_turn()
+'''
 for card in t.game.current_player.hand:
 	if len(card.targets) == 0:
 		if card.is_playable():
 			card.play()
+'''
 t.game.end_turn()
 t.game.end_turn()
+'''
 for card in t.game.current_player.hand:
 	if len(card.targets) == 0:
 		if card.is_playable():
 			card.play()
+'''
 t.game.end_turn()
 t.game.end_turn()
 t.game.end_turn()
