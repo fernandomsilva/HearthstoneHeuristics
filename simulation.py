@@ -207,6 +207,32 @@ class GameState:
 								if target_minion.race == minion.race:
 									target.minion.atk = target_minion.atk - 1
 	
+	def minionAtk(self, character, target):
+		attacker = None
+		defender = None
+		
+		for char in self.minions:
+			if char.id == character.id and char.atk == character.atk and char.health == character.health:
+				attacker = char
+				break
+		
+		for char in self.enemy_minions:
+			if char.id == target.id and char.atk == target.atk and char.health == target.health:
+				defender = char
+				break
+		
+		if attacker != None and defender != None:
+			self.minionDamage(attacker, defender)
+			return True
+		
+		return False
+		
+	def minionDamage(self, attacker, defender):
+		defender.health = defender.health - attacker.atk
+		attacker.health = attacker.health - defender.atk
+	
+		self.updateState()
+	
 	def updateState(self):
 		list_of_minions_to_remove = []
 	
