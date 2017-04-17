@@ -222,14 +222,27 @@ class GameState:
 				break
 		
 		if attacker != None and defender != None:
-			self.minionDamage(attacker, defender)
+			if 'HERO' in defender.id:
+				if target.controller != character.controller:
+					self.minionDamage(attacker, defender, hero=True, self_hero=False)
+				else:
+					self.minionDamage(attacker, defender, hero=True, self_hero=True)
+			else:
+				self.minionDamage(attacker, defender)
+	
 			return True
 		
 		return False
 		
-	def minionDamage(self, attacker, defender):
-		defender.health = defender.health - attacker.atk
-		attacker.health = attacker.health - defender.atk
+	def minionDamage(self, attacker, defender, hero=False, self_hero=False):
+		if hero:
+			if self_hero:
+				self.herohealth = self.herohealth - attacker.atk
+			else:
+				self.enemy_herohealth = self.enemy_herohealth - attacker.atk
+		else:
+			defender.health = defender.health - attacker.atk
+			attacker.health = attacker.health - defender.atk
 	
 		self.updateState()
 	
@@ -243,6 +256,20 @@ class GameState:
 		for minion in list_of_minions_to_remove:
 			self.minions.remove(minion)
 			self.removeEffect(minion)
+
+		list_of_minions_to_remove = []
+	
+		for minion in self.enemy_minions:
+			if minion.health <= 0:
+				list_of_minions_to_remove.append(minion)
+
+		for minion in list_of_minions_to_remove:
+			self.enemy_minions.remove(minion)
+			#self.removeEffect(minion)
+
+		self.number_of_minions = len(self.minions) - 1
+		self.enemy_number_of_minions = len(self.enemy_minions) - 1
+
 
 class Test:
 	def __init__(self):
@@ -275,7 +302,7 @@ class Test:
 		result = []
 		player = self.game.current_player
 
-		for x in len(player.characters):
+		for x in range(0, len(player.characters)):
 			if x not in used:
 				character = player.characters[x]
 				if character.can_attack():
@@ -294,14 +321,29 @@ class Test:
 		return result
 
 	def simulatePossibleAtksLight(self, cards_atk=[], gstate=None, cards_used=[]):
+		if gstate == None:
+			gstate = GameState(self.game)
+
 		result = []
 
-		list_of_next_atks = self.possibleNextAtk()
+		list_of_next_atks = self.possibleNextAtkLight(cards_used)
 
-		for character in list_of_next_atks:
+		for (character, type_of_action) in list_of_next_atks:
 			p = self.game.current_player
 			opp = p.opponent
 
+			for target in character.targets:
+				temp_state = GameState(self.game)
+				temp_state.copy(gstate)
+
+				#target_dict = {'card': target, 'atk': target.atk, 'health': target.health, 'opponent': True if target.controller.first_player != p.first_player else False}
+
+				temp_state.minionAtk(character, target)
+
+				result.append((cards_atk + [(character, target)], temp_state))
+				result.extend(self.simulatePossibleAtksLight(cards_atk + [(character, target)], temp_state, cards_used + [p.characters.index(character)]))
+
+		return result
 
 
 	def simulatePossibleAtks(self, cards_atk=[]):
@@ -400,6 +442,8 @@ class Test:
 
 							if card.id == 'GAME_005': #THE COIN							
 								self.game.current_player.__dict__['_max_mana'] = self.game.current_player.__dict__['_max_mana'] + 1
+
+								temp_state.mana = self.game.current_player.mana
 								
 								result.append((cards_played + [card], temp_state))
 								result.extend(self.simulatePossibleActionsLight(cards_played + [card], temp_state, cards_used + [card_index]))
@@ -409,7 +453,8 @@ class Test:
 							else:
 								self.game.current_player.__dict__['_max_mana'] = self.game.current_player.__dict__['_max_mana'] - card.cost
 
-								#target_dict = {'card': target, 'atk': target.atk, 'health': target.health, 'opponent': True if target.controller.first_player != p.first_player else False}
+								temp_state.mana = self.game.current_player.mana
+								#target_dict = {'card': target, 'atk': target.atk, 'health': target.health, 'opponent': True if target.controller.first_player != self.game.current_player.first_player else False}
 
 								temp_state.playSpell(card, target)
 								
@@ -426,6 +471,8 @@ class Test:
 					
 				self.game.current_player.__dict__['_max_mana'] = self.game.current_player.__dict__['_max_mana'] - self.game.current_player.hero.power.cost
 	
+				temp_state.mana = self.game.current_player.mana
+
 				result.append((cards_played + [card_index], temp_state))
 				result.extend(self.simulatePossibleActionsLight(cards_played + [card_index], temp_state, cards_used + [card_index]))
 
@@ -568,25 +615,44 @@ class HeuristicAI:
 		return result
 
 	def move(self, test):
-		list_of_actions = test.simulatePossibleActions()
-		list_of_atks = test.simulatePossibleAtks()
+		#list_of_actions = test.simulatePossibleActions()
+		#list_of_atks = test.simulatePossibleAtks()
+		list_of_actions = test.simulatePossibleActionsLight()
+		print (list_of_actions)
+		print(test.game.current_player.characters)
+		print(test.game.current_player.opponent.characters)
+		list_of_atks = test.simulatePossibleAtksLight()
+		print (list_of_atks)
 
 		for (action, function, param) in self.heuristic:
 			if action == Actions.PLAY or action == Actions.POWER:
 				if len(list_of_actions) > 0:
 					move = function(list_of_actions, param)
-					self.play(move[0], test.game)
+					if len(move) == 1:
+						self.play(move[0][0], test.game)
+					else:
+						temp = heuristicfunctions.minimum(move, "mana")
+						self.play(temp[0][0], test.game)
 
 			elif action == Actions.ATTACK:
 				if len(list_of_atks) > 0:
 					move = function(list_of_atks, param)
-					self.attack(move[0], test.game)
+					if len(move) == 1:
+						self.attack(move[0][0], test.game)
+					else:
+						self.attack(move[0][0], test.game)
 
 	def play(self, move, game):
 		for action in move:
 			if (isinstance(action, fireplace.card.HeroPower)):
 				game.current_player.hero.power.use()
 			else:
+				if not isinstance(action, tuple):
+					action.play()
+				else:
+					action[0].play(target=action[1])
+
+				'''
 				for card in game.current_player.hand:
 					if not isinstance(action, tuple):
 						if card == action:
@@ -607,9 +673,12 @@ class HeuristicAI:
 							if char == target['card'] and char.atk == target['atk'] and char.health == target['health']:
 								card.play(target=char)
 								break
+				'''
 	
 	def attack(self, move, game):
 		for (atk_char, target) in move:
+			atk_char.attack(target=target)
+			'''
 			if target['opponent']:
 				char_pool = game.current_player.opponent.characters
 			else:
@@ -629,6 +698,7 @@ class HeuristicAI:
 								break
 						
 						break
+			'''
 
 class GameHandler:
 	def __init__(self, test_case, players):
@@ -682,31 +752,37 @@ def testrun():
 
 	h = t.simulatePossibleActionsLight()
 
-t = Test()
+#t = Test()
+'''
 temp = GameHandler(t,[])
 t.start()
-t.game.end_turn()
-'''
 for card in t.game.current_player.hand:
 	if len(card.targets) == 0:
 		if card.is_playable():
 			card.play()
-'''
 t.game.end_turn()
-t.game.end_turn()
-'''
 for card in t.game.current_player.hand:
 	if len(card.targets) == 0:
 		if card.is_playable():
 			card.play()
+t.game.end_turn()
+for card in t.game.current_player.hand:
+	if len(card.targets) == 0:
+		if card.is_playable():
+			card.play()
+t.game.end_turn()
+for card in t.game.current_player.hand:
+	if len(card.targets) == 0:
+		if card.is_playable():
+			card.play()
+t.game.end_turn()
+t.game.end_turn()
+t.game.end_turn()
 '''
-t.game.end_turn()
-t.game.end_turn()
-t.game.end_turn()
-
-h = t.simulatePossibleActionsLight()
+#h = t.simulatePossibleActionsLight()
 #t.start()
 
-#hai = HeuristicAI([(Actions.PLAY, "max", "potential_damage"), (Actions.ATTACK, "min", "enemy_herohealth")])
-#temp = GameHandler(Test(), [hai])
-#temp.run()
+hai = HeuristicAI([(Actions.PLAY, "max", "potential_damage"), (Actions.ATTACK, "min", "enemy_herohealth")])
+hai2 = HeuristicAI([(Actions.PLAY, "max", "number_of_minions"), (Actions.ATTACK, "min", "enemy_number_of_minions")])
+temp = GameHandler(Test(), [hai, hai2])
+temp.run()
