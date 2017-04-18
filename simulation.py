@@ -338,13 +338,13 @@ class Test:
 
 				#target_dict = {'card': target, 'atk': target.atk, 'health': target.health, 'opponent': True if target.controller.first_player != p.first_player else False}
 
-				temp_state.minionAtk(character, target)
+				value = temp_state.minionAtk(character, target)
 
-				result.append((cards_atk + [(character, target)], temp_state))
-				result.extend(self.simulatePossibleAtksLight(cards_atk + [(character, target)], temp_state, cards_used + [p.characters.index(character)]))
+				if value:
+					result.append((cards_atk + [(character, target)], temp_state))
+					result.extend(self.simulatePossibleAtksLight(cards_atk + [(character, target)], temp_state, cards_used + [p.characters.index(character)]))
 
 		return result
-
 
 	def simulatePossibleAtks(self, cards_atk=[]):
 		result = []
@@ -618,20 +618,23 @@ class HeuristicAI:
 		#list_of_actions = test.simulatePossibleActions()
 		#list_of_atks = test.simulatePossibleAtks()
 		list_of_actions = test.simulatePossibleActionsLight()
-		print (list_of_actions)
-		print(test.game.current_player.characters)
-		print(test.game.current_player.opponent.characters)
+		#print (list_of_actions)
+		#print(test.game.current_player.characters)
+		#print(test.game.current_player.opponent.characters)
 		list_of_atks = test.simulatePossibleAtksLight()
-		print (list_of_atks)
+		#print (list_of_atks)
 
 		for (action, function, param) in self.heuristic:
+			if test.game.ended:
+				break
+
 			if action == Actions.PLAY or action == Actions.POWER:
 				if len(list_of_actions) > 0:
 					move = function(list_of_actions, param)
 					if len(move) == 1:
 						self.play(move[0][0], test.game)
 					else:
-						temp = heuristicfunctions.minimum(move, "mana")
+						temp = heuristicfunctions.maximum(move, "mana")
 						self.play(temp[0][0], test.game)
 
 			elif action == Actions.ATTACK:
@@ -644,6 +647,9 @@ class HeuristicAI:
 
 	def play(self, move, game):
 		for action in move:
+			if game.ended:
+				break
+
 			if (isinstance(action, fireplace.card.HeroPower)):
 				game.current_player.hero.power.use()
 			else:
@@ -651,7 +657,6 @@ class HeuristicAI:
 					action.play()
 				else:
 					action[0].play(target=action[1])
-
 				'''
 				for card in game.current_player.hand:
 					if not isinstance(action, tuple):
@@ -677,7 +682,12 @@ class HeuristicAI:
 	
 	def attack(self, move, game):
 		for (atk_char, target) in move:
+			if game.ended:
+				break
+
+			print(game.ended)
 			atk_char.attack(target=target)
+
 			'''
 			if target['opponent']:
 				char_pool = game.current_player.opponent.characters
