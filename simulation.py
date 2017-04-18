@@ -723,8 +723,14 @@ class GameHandler:
 		current_player = 0
 		
 		while not self.game_tester.game.ended:
-			self.players[current_player].move(self.game_tester)
-			self.game_tester.game.end_turn()
+			try:
+				self.players[current_player].move(self.game_tester)
+				self.game_tester.game.end_turn()
+			except:
+				print("Exception: ")
+				print(self.game_tester.game.current_player.hero.health)
+				print(self.game_tester.game.current_player.first_player)
+				print(self.game_tester.game.current_player.opponent.hero.health)
 			
 			current_player = (current_player + 1) % 1
 
