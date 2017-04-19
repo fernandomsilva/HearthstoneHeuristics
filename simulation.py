@@ -270,6 +270,8 @@ class GameState:
 		self.number_of_minions = len(self.minions) - 1
 		self.enemy_number_of_minions = len(self.enemy_minions) - 1
 
+PLAYER_1_NAME = "one"
+PLAYER_2_NAME = "two"
 
 class Test:
 	def __init__(self):
@@ -288,8 +290,8 @@ class Test:
 		self.hero2 = CardClass.HUNTER.default_hero
 		self.deck1 = list(hunter_simple_deck)
 		self.deck2 = list(hunter_simple_deck)
-		self.player1 = Player("one", self.deck1, self.hero1)
-		self.player2 = Player("two", self.deck2, self.hero2)
+		self.player1 = Player(PLAYER_1_NAME, self.deck1, self.hero1)
+		self.player2 = Player(PLAYER_2_NAME, self.deck2, self.hero2)
 		self.game = Game(players=(self.player1, self.player2))
 		self.game.start()
 		self.skipMulligan()
@@ -715,8 +717,6 @@ class GameHandler:
 		self.game_tester = test_case
 		self.players = players
 
-		cards.db.initialize()
-
 	def run(self):
 		self.game_tester.start()
 
@@ -727,12 +727,37 @@ class GameHandler:
 				self.players[current_player].move(self.game_tester)
 				self.game_tester.game.end_turn()
 			except:
-				print("Exception: ")
-				print(self.game_tester.game.current_player.hero.health)
-				print(self.game_tester.game.current_player.first_player)
-				print(self.game_tester.game.current_player.opponent.hero.health)
+				break
+				#print("Exception: ")
+				#print(self.game_tester.game.current_player.hero.health)
+				#print(self.game_tester.game.current_player.first_player)
+				#print(self.game_tester.game.current_player.opponent.hero.health)
 			
 			current_player = (current_player + 1) % 1
+
+		return self.game_result(self.game_tester.game) 
+
+	def game_result(self, game):
+		result = {'order': [], 'number': []} #order tells if the first player or the second player won ; number tells if player 1 or player 2 won
+
+		if game.current_player.hero.health > 0:
+			winner = game.current_player
+			loser = winner.opponent
+		else:
+			loser = game.current_player
+			winner = loser.opponent
+
+		if winner.first_player:
+			result['order'] = [1, 0]
+		else:
+			result['order'] = [0, 1]
+
+		if winner.name == PLAYER_1_NAME:
+			result['number'] = [1, 0]
+		else:
+			result['number'] = [0, 1]
+
+		return result
 
 '''
 self.player1.hero.power.is_usable()
@@ -798,7 +823,24 @@ t.game.end_turn()
 #h = t.simulatePossibleActionsLight()
 #t.start()
 
+import time
+
 hai = HeuristicAI([(Actions.PLAY, "max", "potential_damage"), (Actions.ATTACK, "min", "enemy_herohealth")])
 hai2 = HeuristicAI([(Actions.PLAY, "max", "number_of_minions"), (Actions.ATTACK, "min", "enemy_number_of_minions")])
-temp = GameHandler(Test(), [hai, hai2])
-temp.run()
+
+cards.db.initialize()
+
+start = time.time()
+
+result = {'order': [0, 0], 'number': [0, 0]}
+for i in range(0, 100):
+	temp = GameHandler(Test(), [hai, hai2])
+	match = temp.run()
+
+	result['order'][0] += match['order'][0]
+	result['order'][1] += match['order'][1]
+	result['number'][0] += match['number'][0]
+	result['number'][1] += match['number'][1]
+
+print("Ellapsed Time: " + str(time.time() - start))
+print(result)
