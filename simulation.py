@@ -73,9 +73,11 @@ class GameState:
 		self.potential_damage = self.calculatePotentialDamage(player.characters)
 		self.minions = [CharacterState(x) for x in player.characters]
 		self.number_of_minions = len(player.characters) - 1 # minus 1 to remove the hero
+		self.minion_damage = sum([x.atk for x in self.minions])
 		self.enemy_herohealth = opponent.hero.health
 		self.enemy_minions = [CharacterState(x) for x in opponent.characters]
 		self.enemy_number_of_minions = len(opponent.characters) - 1 # minus 1 to remove the hero
+		self.enemy_minion_damage = sum([x.atk for x in self.enemy_minions])
 		self.updateEffects = self.minionsUpdateEffects()
 	
 	def __str__(self):
@@ -95,8 +97,10 @@ class GameState:
 		self.potential_damage = state.potential_damage
 		self.minions = list(state.minions)
 		self.number_of_minions = state.number_of_minions
+		self.minion_damage = sum([x.atk for x in self.minions])
 		self.enemy_herohealth = state.enemy_herohealth
 		self.enemy_number_of_minions = state.enemy_number_of_minions
+		self.enemy_minion_damage = sum([x.atk for x in self.enemy_minions])
 		self.updateEffects = self.minionsUpdateEffects()
 
 	def calculatePotentialDamage(self, characters):
@@ -107,6 +111,10 @@ class GameState:
 				total += character.atk
 
 		return total
+
+	def updateMinionDamage(self):
+		self.minion_damage = sum([x.atk for x in self.minions])
+		self.enemy_minion_damage = sum([x.atk for x in self.enemy_minions])
 
 	def minionsUpdateEffects(self):
 		result = []
@@ -146,6 +154,7 @@ class GameState:
 		if len(charstate.power['update']) > 0:
 			self.activatePower(charstate, 'update')
 		self.number_of_minions = self.number_of_minions + 1
+		self.updateMinionDamage()
 		#self.potential_damage = self.calculatePotentialDamage(player.characters)
 
 	def playSpell(self, card, target):
@@ -269,6 +278,7 @@ class GameState:
 
 		self.number_of_minions = len(self.minions) - 1
 		self.enemy_number_of_minions = len(self.enemy_minions) - 1
+		self.updateMinionDamage()
 
 PLAYER_1_NAME = "one"
 PLAYER_2_NAME = "two"
@@ -459,6 +469,7 @@ class Test:
 								#target_dict = {'card': target, 'atk': target.atk, 'health': target.health, 'opponent': True if target.controller.first_player != self.game.current_player.first_player else False}
 
 								temp_state.playSpell(card, target)
+								temp_state.updateState()
 								
 								result.append((cards_played + [(card, target)], temp_state))
 								result.extend(self.simulatePossibleActionsLight(cards_played + [(card, target)], temp_state, cards_used + [card_index]))
@@ -825,8 +836,9 @@ t.game.end_turn()
 
 import time
 
-hai = HeuristicAI([(Actions.PLAY, "max", "potential_damage"), (Actions.ATTACK, "min", "enemy_herohealth")])
-hai2 = HeuristicAI([(Actions.PLAY, "max", "number_of_minions"), (Actions.ATTACK, "min", "enemy_number_of_minions")])
+hai = HeuristicAI([(Actions.PLAY, "max", "minion_damage"), (Actions.ATTACK, "min", "enemy_herohealth")])
+#hai2 = HeuristicAI([(Actions.PLAY, "max", "number_of_minions"), (Actions.ATTACK, "min", "enemy_number_of_minions")])
+hai2 = HeuristicAI([(Actions.PLAY, "random", "mana"), (Actions.ATTACK, "min", "enemy_number_of_minions")])
 
 cards.db.initialize()
 
