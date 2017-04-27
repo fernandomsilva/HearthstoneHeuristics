@@ -14,6 +14,7 @@ class Actions(Enum):
 	PLAY = 1
 	ATTACK = 2
 	POWER = 3
+	CONDITION = 4
 
 class Effects(Enum):
 	SUMMON = 1
@@ -641,6 +642,12 @@ class HeuristicAI:
 			if test.game.ended:
 				break
 
+			if action == Actions.CONDITION:
+				pass
+
+			if action == Actions.PLAY or action == Actions.POWER or action == Actions.ATTACK:
+				self.action(action, function, param, list_of_actions, list_of_atks, test)
+			'''
 			if action == Actions.PLAY or action == Actions.POWER:
 				if len(list_of_actions) > 0:
 					move = function(list_of_actions, param)
@@ -657,6 +664,25 @@ class HeuristicAI:
 						self.attack(move[0][0], test.game)
 					else:
 						self.attack(move[0][0], test.game)
+			'''
+
+	def action(self, act, function, param, list_of_actions, list_of_atks, test):
+		if act == Actions.PLAY or act == Actions.POWER:
+			if len(list_of_actions) > 0:
+				move = function(list_of_actions, param)
+				if len(move) == 1:
+					self.play(move[0][0], test.game)
+				else:
+					temp = heuristicfunctions.maximum(move, "mana")
+					self.play(temp[0][0], test.game)
+
+		elif act == Actions.ATTACK:
+			if len(list_of_atks) > 0:
+				move = function(list_of_atks, param)
+				if len(move) == 1:
+					self.attack(move[0][0], test.game)
+				else:
+					self.attack(move[0][0], test.game)
 
 	def play(self, move, game):
 		for action in move:
@@ -698,7 +724,7 @@ class HeuristicAI:
 			if game.ended:
 				break
 
-			print(game.ended)
+			#print(game.ended)
 			atk_char.attack(target=target)
 
 			'''
@@ -738,6 +764,7 @@ class GameHandler:
 				self.players[current_player].move(self.game_tester)
 				self.game_tester.game.end_turn()
 			except:
+				print("exception")
 				break
 				#print("Exception: ")
 				#print(self.game_tester.game.current_player.hero.health)
@@ -838,7 +865,7 @@ import time
 
 hai = HeuristicAI([(Actions.PLAY, "max", "minion_damage"), (Actions.ATTACK, "min", "enemy_herohealth")])
 #hai2 = HeuristicAI([(Actions.PLAY, "max", "number_of_minions"), (Actions.ATTACK, "min", "enemy_number_of_minions")])
-hai2 = HeuristicAI([(Actions.PLAY, "random", "mana"), (Actions.ATTACK, "min", "enemy_number_of_minions")])
+hai2 = HeuristicAI([(Actions.PLAY, "fullrandom", "mana"), (Actions.ATTACK, "fullrandom", "enemy_number_of_minions")])
 
 cards.db.initialize()
 

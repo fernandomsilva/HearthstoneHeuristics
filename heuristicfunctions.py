@@ -14,6 +14,8 @@ def random(input_list, attr):
 	value = max([x[1].__dict__[attr] for x in input_list])
 	return [random.choice([x for x in input_list if x[1].__dict__[attr] == value])]
 
+def fullrandom(input_list, attr):
+	return [random.choice(input_list)]
 #print(list_of_actions)
 
 #print(list_of_actions[0][1])
