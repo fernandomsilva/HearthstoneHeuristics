@@ -763,15 +763,18 @@ class GameHandler:
 			try:
 				self.players[current_player].move(self.game_tester)
 				self.game_tester.game.end_turn()
+			#except:
+				#print("Unexpected error:", sys.exc_info()[0])
+				#raise
 			except:
-				print("exception")
+			#	print("exception")
 				break
 				#print("Exception: ")
 				#print(self.game_tester.game.current_player.hero.health)
 				#print(self.game_tester.game.current_player.first_player)
 				#print(self.game_tester.game.current_player.opponent.hero.health)
 			
-			current_player = (current_player + 1) % 1
+			current_player = (current_player + 1) % len(self.players)
 
 		return self.game_result(self.game_tester.game) 
 
@@ -864,8 +867,8 @@ t.game.end_turn()
 import time
 
 hai = HeuristicAI([(Actions.PLAY, "max", "minion_damage"), (Actions.ATTACK, "min", "enemy_herohealth")])
-#hai2 = HeuristicAI([(Actions.PLAY, "max", "number_of_minions"), (Actions.ATTACK, "min", "enemy_number_of_minions")])
-hai2 = HeuristicAI([(Actions.PLAY, "fullrandom", "mana"), (Actions.ATTACK, "fullrandom", "enemy_number_of_minions")])
+hai2 = HeuristicAI([(Actions.PLAY, "max", "number_of_minions"), (Actions.ATTACK, "min", "enemy_number_of_minions")])
+#hai2 = HeuristicAI([(Actions.PLAY, "fullrandom", "mana"), (Actions.ATTACK, "fullrandom", "enemy_number_of_minions")])
 
 cards.db.initialize()
 
