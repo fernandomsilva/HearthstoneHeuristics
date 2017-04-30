@@ -16,6 +16,18 @@ def random(input_list, attr):
 
 def fullrandom(input_list, attr):
 	return [random.choice(input_list)]
+
+def condition(statement_list, gamestate):
+	flag_condition = True
+	for (argument, operator, value) in statement_list:
+		if operator(gamestate.__dict__[argument], value):
+			pass
+		else:
+			flag_condition = False
+			break
+	
+	return flag_condition
+
 #print(list_of_actions)
 
 #print(list_of_actions[0][1])
