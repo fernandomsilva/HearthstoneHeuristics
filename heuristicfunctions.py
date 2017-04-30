@@ -20,7 +20,13 @@ def fullrandom(input_list, attr):
 def condition(statement_list, gamestate):
 	flag_condition = True
 	for (argument, operator, value) in statement_list:
-		if operator(gamestate.__dict__[argument], value):
+		arg = argument
+		val = value
+		if isinstance(argument, str):
+			arg = gamestate.__dict__[argument]
+		if isinstance(value, str):
+			val = gamestate.__dict__[value]
+		if operator(arg, value):
 			pass
 		else:
 			flag_condition = False
