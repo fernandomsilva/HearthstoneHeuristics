@@ -625,6 +625,8 @@ class HeuristicAI:
 				result.append((action, heuristicfunctions.minimum, param))
 			elif item == "max":
 				result.append((action, heuristicfunctions.maximum, param))
+			elif item == "condition":
+				result.append((action, heuristicfunctions.condition, param))
 
 		return result
 
@@ -644,7 +646,7 @@ class HeuristicAI:
 				break
 
 			if action == Actions.CONDITION:
-				flag_condition_met = heuristicfunctions.condition(param, GameState(test.game))
+				flag_condition_met = function(param, GameState(test.game))
 				continue
 			
 			if flag_condition_met:
