@@ -638,15 +638,20 @@ class HeuristicAI:
 		list_of_atks = test.simulatePossibleAtksLight()
 		#print (list_of_atks)
 
+		flag_condition_met = True
 		for (action, function, param) in self.heuristic:
 			if test.game.ended:
 				break
 
 			if action == Actions.CONDITION:
-				pass
-
-			if action == Actions.PLAY or action == Actions.POWER or action == Actions.ATTACK:
-				self.action(action, function, param, list_of_actions, list_of_atks, test)
+				flag_condition_met = heuristicfunctions.condition(param, GameState(test.game))
+				continue
+			
+			if flag_condition_met:
+				if action == Actions.PLAY or action == Actions.POWER or action == Actions.ATTACK:
+					self.action(action, function, param, list_of_actions, list_of_atks, test)
+			
+			flag_condition_met = True
 			'''
 			if action == Actions.PLAY or action == Actions.POWER:
 				if len(list_of_actions) > 0:
